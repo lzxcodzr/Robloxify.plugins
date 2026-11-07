@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RBProfileData</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #0f0f0f; --surface: #1a1a1a; --primary: #f97316; --primary-glow: #fb923c;
+            --primary-dim: rgba(249, 115, 22, 0.15); --text: #f8fafc; --muted: #94a3b8; 
+            --border: #2a2a2a; --success: #22c55e; --error: #ef4444; 
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; min-height: 100vh; padding-bottom: 80px; }
+        
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { color: var(--primary); margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; }
+        .header p { color: var(--muted); font-size: 13px; margin-top: 5px; font-weight: 600; }
+        
+        .search-box { display: flex; gap: 10px; margin-bottom: 10px; background: var(--surface); padding: 8px; border-radius: 16px; border: 1px solid var(--border); }
+        input { flex: 1; min-width: 0; padding: 12px 16px; background: transparent; border: none; color: var(--text); font-size: 16px; outline: none; }
+        input::placeholder { color: var(--muted); }
+        button.btn-search { flex-shrink: 0; padding: 0 20px; background: var(--primary); color: #000; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: transform 0.2s; }
+        button.btn-search:active { transform: scale(0.95); background: var(--primary-glow); }
+        
+        .hint-text { text-align: center; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+        
+        /* НЕЗАМЕТНАЯ ПЛАШКА ПРЕДУПРЕЖДЕНИЯ О VPN */
+        .vpn-warning {
+            display: none;
+            text-align: center;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 400;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+        
+        .result-card { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #b91c1c); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: #000; overflow: hidden; flex-shrink: 0; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .profile-info h2 { margin: 0 0 2px 0; font-size: 20px; word-break: break-all; color: #fff; display: flex; align-items: center; gap: 5px;}
+        .profile-info .username { font-size: 13px; color: var(--muted); word-break: break-all; font-weight: 500; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .info-item { background: rgba(255,255,255,0.03); padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); }
+        .info-label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600; }
+        .info-value { font-size: 14px; font-weight: 600; font-family: 'JetBrains Mono', monospace; word-break: break-all; color: #fff; }
+        .status-active { color: var(--success); } .status-banned { color: var(--error); }
+        
+        .text-block { background: rgba(255,255,255,0.03); padding: 14px; border-radius: 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; border: 1px solid rgba(255,255,255,0.05); word-break: break-word; }
+        .text-block b { color: var(--primary-glow); display: block; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .error { color: var(--error); text-align: center; font-weight: 600; font-size: 14px; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 14px; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .loader { text-align: center; color: var(--primary); margin-top: 20px; font-size: 14px; font-weight: 600; }
+
+        .lang-btn {
+            position: fixed; bottom: 20px; right: 20px; background: var(--surface); color: var(--primary);
+            border: 1px solid var(--border); padding: 10px 16px; border-radius: 20px; font-weight: 800;
+            font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100; transition: all 0.2s;
+        }
+        .lang-btn:active { transform: scale(0.9); background: var(--primary-dim); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 id="ui-title">RBProfileData</h1>
+        <p id="ui-subtitle">OSINT Profile Checker</p>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="username" placeholder="Введите логин..." autocomplete="off" autocapitalize="none">
+        <button class="btn-search" id="ui-search-btn" onclick="searchUser()">Поиск</button>
+    </div>
+    
+    <div class="hint-text" id="ui-hint">
+        Ищите по уникальному логину, а не по отображаемому имени!
+    </div>
+
+    <!-- НЕЗАМЕТНАЯ ПЛАШКА VPN -->
+    <div class="vpn-warning" id="ui-vpn-warning"></div>
+
+    <div id="resultContainer"></div>
+
+    <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()">EN</button>
+
+    <script>
+        const TRANSLATIONS = {
+            ru: {
+                title: "RBProfileData",
+                subtitle: "OSINT Profile Checker",
+                placeholder: "Введите логин...",
+                search: "Поиск",
+                hint: "Ищите по уникальному логину, а не по отображаемому имени!",
+                vpnWarn: "Для пользователей из РФ: если поиск не работает, включите VPN (API Роблокса заблокирован).",
+                id: "ID", ban: "Бан", banned: "Забанен", notBanned: "Нет",
+                reg: "Регистрация", years: "лет",
+                social: "Социалка", friends: "Друзей", followers: "Подписчиков",
+                online: "Онлайн-статус", offline: "Оффлайн", web: "В сети (Сайт)", 
+                playing: "Играет", studio: "В Roblox Studio", unknown: "Неизвестно",
+                groups: "Группы", desc: "Описание",
+                errEmpty: "Введите ник", errNotFound: "Ошибка: Игрок не найден или все прокси перегружены (Включите VPN).",
+                errLoad: "Ошибка загрузки данных",
+                loading: "Сбор данных..."
+            },
+            en: {
+                title: "RBProfileData",
+                subtitle: "OSINT Profile Checker",
+                placeholder: "Enter username...",
+                search: "Search",
+                hint: "Search by unique username, not display name!",
+                vpnWarn: "For users from Russia: if the search doesn't work, enable a VPN (Roblox API is blocked).",
+                id: "ID", ban: "Ban", banned: "Banned", notBanned: "No",
+                reg: "Registered", years: "years old",
+                social: "Social", friends: "Friends", followers: "Followers",
+                online: "Online Status", offline: "Offline", web: "Online (Web)", 
+                playing: "Playing", studio: "In Roblox Studio", unknown: "Unknown",
+                groups: "Groups", desc: "About",
+                errEmpty: "Enter username", errNotFound: "Error: User not found or proxies overloaded (Enable VPN).",
+                errLoad: "Error loading data",
+                loading: "Gathering data..."
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function t(key) {
+            return TRANSLATIONS[currentLang][key] || key;
+        }
+
+        function applyLanguage() {
+            document.getElementById('ui-title').textContent = t('title');
+            document.getElementById('ui-subtitle').textContent = t('subtitle');
+            document.getElementById('username').placeholder = t('placeholder');
+            document.getElementById('ui-search-btn').textContent = t('search');
+            document.getElementById('ui-hint').textContent = t('hint');
+            
+            const vpnEl = document.getElementById('ui-vpn-warning');
+            vpnEl.textContent = t('vpnWarn');
+            vpnEl.style.display = 'block';
+            
+            document.getElementById('langToggleBtn').textContent = currentLang === 'ru' ? 'EN' : 'RU';
+            document.documentElement.lang = currentLang;
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ru' ? 'en' : 'ru';
+            applyLanguage();
+            try { localStorage.setItem('rbpd_lang', currentLang); } catch(e) {}
+            document.getElementById('resultContainer').innerHTML = '';
+        }
+
+        try {
+            const savedLang = localStorage.getItem('rbpd_lang');
+            if (savedLang) currentLang = savedLang;
+        } catch(e) {}
+        applyLanguage();
+
+        function translateRole(role) {
+            if (currentLang === 'en') return role;
+            let translated = role;
+            translated = translated.replace(/Member/ig, "Участник");
+            translated = translated.replace(/Admin/ig, "Админ");
+            translated = translated.replace(/Owner/ig, "Владелец");
+            translated = translated.replace(/Officer/ig, "Офицер");
+            translated = translated.replace(/Developer/ig, "Разработчик");
+            translated = translated.replace(/Builder/ig, "Строитель");
+            translated = translated.replace(/Moderator/ig, "Модератор");
+            translated = translated.replace(/Guest/ig, "Гость");
+            translated = translated.replace(/Membre/ig, "Участник");
+            return translated;
+        }
+
+        async function searchUser() {
+            const username = document.getElementById('username').value.trim();
+            const container = document.getElementById('resultContainer');
+            
+            if (!username) {
+                container.innerHTML = `<div class="error">${t('errEmpty')}</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="loader">${t('loading')}</div>`;
+
+            const PROXIES = ["roproxy.com", "rotunnel.com"];
+            let activeProxy = null;
+            let userId = null;
+
+            for (let proxy of PROXIES) {
+                try {
+                    const res = await fetch(`https://users.${proxy}/v1/usernames/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ usernames: [username], excludeBannedUsers: false })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.data && data.data.length > 0) {
+                            userId = data.data[0].id;
+                            activeProxy = proxy;
+                            break;
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            if (!userId || !activeProxy) {
+                container.innerHTML = `<div class="error">${t('errNotFound')}</div>`;
+                return;
+            }
+
+            try {
+                const USERS_API = `https://users.${activeProxy}/v1/`;
+                const FRIENDS_API = `https://friends.${activeProxy}/v1/`;
+                const GROUPS_API = `https://groups.${activeProxy}/v1/`;
+                const PRESENCE_API = `https://presence.${activeProxy}/v1/`;
+                const THUMB_API = `https://thumbnails.${activeProxy}/v1/`;
+
+                const info = await (await fetch(USERS_API + `users/${userId}`)).json();
+                const createdDate = new Date(info.created);
+                const ageYears = Math.floor((new Date() - createdDate) / (1000 * 60 * 60 * 24 * 365.25));
+                const dateStr = createdDate.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US');
+
+                const [follData, frData, presData] = await Promise.all([
+                    fetch(FRIENDS_API + `users/${userId}/followers/count`).then(r => r.json()).catch(() => ({count: 0})),
+                    fetch(FRIENDS_API + `users/${userId}/friends/count`).then(r => r.json()).catch(() => ({count: 0})),
+                    fetch(PRESENCE_API + 'presence/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userIds: [userId] })
+                    }).then(r => r.json()).catch(() => null)
+                ]);
+
+                let onlineStatus = t('offline');
+                if (presData && presData.userPresences && presData.userPresences.length > 0) {
+                    const p = presData.userPresences[0];
+                    if (p.userPresenceType === 1) onlineStatus = t('web');
+                    if (p.userPresenceType === 2) onlineStatus = `${t('playing')}: ${p.lastLocation || t('unknown')}`;
+                    if (p.userPresenceType === 3) onlineStatus = t('studio');
+                }
+
+                let groupsHtml = "";
+                try {
+                    const grData = await (await fetch(GROUPS_API + `users/${userId}/groups/roles`)).json();
+                    if (grData.data && grData.data.length > 0) {
+                        let list = "";
+                        grData.data.slice(0, 4).forEach(g => { 
+                            const translatedRole = translateRole(g.role.name);
+                            list += `• ${g.group.name} (${translatedRole})<br>`; 
+                        });
+                        groupsHtml = `<div class="text-block"><b>${t('groups')}</b>${list}</div>`;
+                    }
+                } catch(e) {}
+
+                const showUsername = info.displayName.toLowerCase() !== info.name.toLowerCase();
+                const usernameHtml = showUsername ? `<div class="username">@${info.name}</div>` : '';
+
+                let html = `
+                    <div class="result-card" style="display: block;">
+                        <div class="profile-header">
+                            <div class="avatar" id="avatarBox">${username.charAt(0).toUpperCase()}</div>
+                            <div class="profile-info">
+                                <h2>${info.displayName} ${info.hasVerifiedBadge ? '✅' : ''}</h2>
+                                ${usernameHtml}
+                            </div>
+                        </div>
+                        
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">${t('id')}</span><span class="info-value">${userId}</span></div>
+                            <div class="info-item"><span class="info-label">${t('ban')}</span><span class="info-value ${info.isBanned ? 'status-banned' : 'status-active'}">${info.isBanned ? t('banned') : t('notBanned')}</span></div>
+                            <div class="info-item" style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center;">
+                                <div><span class="info-label">${t('reg')}</span><span class="info-value">${dateStr}</span></div>
+                                <div style="color: var(--muted); font-size: 12px; font-weight: 600;">${ageYears} ${t('years')}</div>
+                            </div>
+                        </div>
+
+                        <div class="text-block">
+                            <b>${t('social')}</b>
+                            ${t('friends')}: ${frData.count || 0} | ${t('followers')}: ${follData.count || 0}
+                        </div>
+
+                        <div class="text-block">
+                            <b>${t('online')}</b>
+                            ${onlineStatus}
+                        </div>
+
+                        ${groupsHtml}
+
+                        ${info.description ? `<div class="text-block"><b>${t('desc')}</b>${info.description.replace(/\n/g, '<br>')}</div>` : ''}
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                const avatarImg = new Image();
+                avatarImg.src = `${THUMB_API}users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=true`;
+                avatarImg.onload = () => { document.getElementById('avatarBox').innerHTML = `<img src="${avatarImg.src}">`; };
+
+            } catch (error) {
+                container.innerHTML = `<div class="error">${t('errLoad')}: ${error.message}</div>`;
+            }
+        }
+
+        document.getElementById('username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { this.blur(); searchUser(); }
+        });
+    </script>
+</body>
+</html>
