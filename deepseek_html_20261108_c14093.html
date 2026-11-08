@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RBGroupIntel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        /* ИЗУМРУДНАЯ ТЕМА (CYBER EMERALD) */
+        :root { 
+            --bg: #0f0f0f; 
+            --surface: #1a1a1a; 
+            --primary: #10b981;       
+            --primary-glow: #34d399;  
+            --primary-dim: rgba(16, 185, 129, 0.15);
+            --text: #f8fafc; 
+            --muted: #94a3b8; 
+            --border: #2a2a2a; 
+            --success: #22c55e; 
+            --error: #ef4444; 
+        }
+        
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; min-height: 100vh; padding-bottom: 80px; }
+        
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { color: var(--primary); margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; }
+        .header p { color: var(--muted); font-size: 13px; margin-top: 5px; font-weight: 600; }
+        
+        .search-box { display: flex; gap: 10px; margin-bottom: 10px; background: var(--surface); padding: 8px; border-radius: 16px; border: 1px solid var(--border); }
+        input { flex: 1; min-width: 0; padding: 12px 16px; background: transparent; border: none; color: var(--text); font-size: 16px; outline: none; }
+        input::placeholder { color: var(--muted); }
+        button.btn-search { flex-shrink: 0; padding: 0 20px; background: var(--primary); color: #000; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: transform 0.2s; }
+        button.btn-search:active { transform: scale(0.95); background: var(--primary-glow); }
+        
+        .hint-text { text-align: center; color: var(--muted); font-size: 11px; margin-bottom: 15px; }
+        
+        .result-card { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .group-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .group-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #047857); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: #000; overflow: hidden; flex-shrink: 0; }
+        .group-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .group-info h2 { margin: 0 0 4px 0; font-size: 20px; word-break: break-all; color: #fff; display: flex; align-items: center; gap: 5px; }
+        .group-info .owner { font-size: 13px; color: var(--muted); word-break: break-all; font-weight: 500; }
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .info-item { background: rgba(255,255,255,0.03); padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); }
+        .info-label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600; }
+        .info-value { font-size: 14px; font-weight: 600; font-family: 'JetBrains Mono', monospace; word-break: break-all; color: #fff; }
+        
+        .text-block { background: rgba(255,255,255,0.03); padding: 14px; border-radius: 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; border: 1px solid rgba(255,255,255,0.05); word-break: break-word; }
+        .text-block b { color: var(--primary-glow); display: block; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .role-list { margin-top: 10px; }
+        .role-item { background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .role-item strong { color: var(--primary-glow); }
+        .role-count { font-family: 'JetBrains Mono', monospace; color: var(--muted); font-size: 12px; }
+        
+        .error { color: var(--error); text-align: center; font-weight: 600; font-size: 14px; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 14px; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .loader { text-align: center; color: var(--primary); margin-top: 20px; font-size: 14px; font-weight: 600; }
+
+        .lang-btn {
+            position: fixed; bottom: 20px; right: 20px; background: var(--surface); color: var(--primary);
+            border: 1px solid var(--border); padding: 10px 16px; border-radius: 20px; font-weight: 800;
+            font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100; transition: all 0.2s;
+        }
+        .lang-btn:active { transform: scale(0.9); background: var(--primary-dim); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 id="ui-title">RBGroupIntel</h1>
+        <p id="ui-subtitle">Group OSINT Checker</p>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="groupId" placeholder="Введите ID группы..." autocomplete="off" autocapitalize="none">
+        <button class="btn-search" id="ui-search-btn" onclick="searchGroup()">Поиск</button>
+    </div>
+    
+    <div class="hint-text" id="ui-hint">
+        Введите числовой ID группы (можно найти в ссылке на группу).
+    </div>
+
+    <div id="resultContainer"></div>
+
+    <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()">EN</button>
+
+    <script>
+        const TRANSLATIONS = {
+            ru: {
+                title: "RBGroupIntel", subtitle: "Group OSINT Checker",
+                placeholder: "Введите ID группы...", search: "Поиск",
+                hint: "Введите числовой ID группы (можно найти в ссылке на группу).",
+                id: "ID", owner: "Владелец", members: "Участников", created: "Создана", unknown: "Неизвестно",
+                verified: "Верифицирована", yes: "Да", no: "Нет",
+                roles: "Роли", noRoles: "Роли не найдены или скрыты.",
+                errEmpty: "Введите ID группы", errNotFound: "Ошибка: Группа не найдена или все прокси перегружены.",
+                errLoad: "Ошибка загрузки данных", loading: "Сбор данных..."
+            },
+            en: {
+                title: "RBGroupIntel", subtitle: "Group OSINT Checker",
+                placeholder: "Enter Group ID...", search: "Search",
+                hint: "Enter the numeric Group ID (can be found in the group link).",
+                id: "ID", owner: "Owner", members: "Members", created: "Created", unknown: "Unknown",
+                verified: "Verified", yes: "Yes", no: "No",
+                roles: "Roles", noRoles: "No roles found or hidden.",
+                errEmpty: "Enter Group ID", errNotFound: "Error: Group not found or all proxies overloaded.",
+                errLoad: "Error loading data", loading: "Gathering data..."
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function t(key) {
+            return TRANSLATIONS[currentLang][key] || key;
+        }
+
+        function applyLanguage() {
+            document.getElementById('ui-title').textContent = t('title');
+            document.getElementById('ui-subtitle').textContent = t('subtitle');
+            document.getElementById('groupId').placeholder = t('placeholder');
+            document.getElementById('ui-search-btn').textContent = t('search');
+            document.getElementById('ui-hint').textContent = t('hint');
+            document.getElementById('langToggleBtn').textContent = currentLang === 'ru' ? 'EN' : 'RU';
+            document.documentElement.lang = currentLang;
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ru' ? 'en' : 'ru';
+            applyLanguage();
+            try { localStorage.setItem('rbgi_lang', currentLang); } catch(e) {}
+            document.getElementById('resultContainer').innerHTML = '';
+        }
+
+        try {
+            const savedLang = localStorage.getItem('rbgi_lang');
+            if (savedLang) currentLang = savedLang;
+        } catch(e) {}
+        applyLanguage();
+
+        // КАСКАДНЫЙ ПЕРЕБОР ПРОКСИ
+        const PROXIES = [
+            { domain: "groups.roproxy.com", type: "roblox" },
+            { domain: "groups.rotunnel.com", type: "roblox" }
+        ];
+
+        async function fetchWithFallback(endpoint) {
+            for (let proxy of PROXIES) {
+                try {
+                    const url = `https://${proxy.domain}${endpoint}`;
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        return await res.json();
+                    }
+                } catch (e) {
+                    console.warn(`Прокси ${proxy.domain} не сработал, пробуем следующий...`);
+                }
+            }
+            throw new Error("All proxies failed");
+        }
+
+        async function searchGroup() {
+            const groupId = document.getElementById('groupId').value.trim();
+            const container = document.getElementById('resultContainer');
+            
+            if (!groupId) {
+                container.innerHTML = `<div class="error">${t('errEmpty')}</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="loader">${t('loading')}</div>`;
+
+            try {
+                // 1. Основная информация о группе
+                const info = await fetchWithFallback(`/v1/groups/${groupId}`);
+
+                // 2. Роли группы
+                let rolesHtml = `<div class="text-block"><b>${t('roles')}</b>`;
+                try {
+                    const rolesData = await fetchWithFallback(`/v1/groups/${groupId}/roles`);
+                    if (rolesData.roles && rolesData.roles.length > 0) {
+                        // Убираем дубликаты ролей и сортируем по рангу
+                        const uniqueRoles = [];
+                        const seenRanks = new Set();
+                        
+                        rolesData.roles.sort((a, b) => b.rank - a.rank).forEach(role => {
+                            if (!seenRanks.has(role.rank)) {
+                                seenRanks.add(role.rank);
+                                // У владельца всегда должен быть 1 человек (он сам)
+                                if (role.rank === 255 && role.memberCount === 0) {
+                                    role.memberCount = 1;
+                                }
+                                uniqueRoles.push(role);
+                            }
+                        });
+
+                        uniqueRoles.forEach(role => {
+                            rolesHtml += `<div class="role-item"><strong>${role.name}</strong> <span class="role-count">${role.memberCount} чел.</span></div>`;
+                        });
+                    } else {
+                        rolesHtml += t('noRoles');
+                    }
+                } catch (e) {
+                    rolesHtml += t('noRoles');
+                }
+                rolesHtml += `</div>`;
+
+                let avatarUrl = `https://thumbnails.roproxy.com/v1/groups/icons?groupIds=${groupId}&size=150x150&format=Png`;
+
+                // БЕЗОПАСНЫЙ ПАРСИНГ ДАТЫ
+                let dateStr = t('unknown');
+                try {
+                    if (info.created) {
+                        const d = new Date(info.created);
+                        if (!isNaN(d.getTime())) {
+                            dateStr = d.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US');
+                        }
+                    }
+                } catch (e) {}
+
+                let html = `
+                    <div class="result-card" style="display: block;">
+                        <div class="group-header">
+                            <div class="group-avatar" id="groupAvatarBox">${info.name.charAt(0).toUpperCase()}</div>
+                            <div class="group-info">
+                                <h2>${info.name} ${info.hasVerifiedBadge ? '✅' : ''}</h2>
+                                <span class="owner">${t('owner')}: ${info.owner ? info.owner.username : 'Нет'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">${t('id')}</span><span class="info-value">${groupId}</span></div>
+                            <div class="info-item"><span class="info-label">${t('members')}</span><span class="info-value">${info.memberCount.toLocaleString()}</span></div>
+                            <div class="info-item" style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center;">
+                                <div><span class="info-label">${t('created')}</span><span class="info-value">${dateStr}</span></div>
+                                <div style="color: var(--muted); font-size: 12px; font-weight: 600;">${t('verified')}: ${info.hasVerifiedBadge ? t('yes') : t('no')}</div>
+                            </div>
+                        </div>
+
+                        ${rolesHtml}
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                const avatarImg = new Image();
+                avatarImg.src = avatarUrl;
+                avatarImg.onload = () => { 
+                    const box = document.getElementById('groupAvatarBox');
+                    if (box) box.innerHTML = `<img src="${avatarImg.src}">`; 
+                };
+
+            } catch (error) {
+                container.innerHTML = `<div class="error">${t('errNotFound')}</div>`;
+            }
+        }
+
+        document.getElementById('groupId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { this.blur(); searchGroup(); }
+        });
+    </script>
+</body>
+</html>
